@@ -22,12 +22,30 @@ app.use('/api', automationRoutes);
 // Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');
-  app.use(express.static(frontendPath));
   
-  // Serve index.html for all non-API routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
+  // Check if frontend dist exists
+  const fs = require('fs');
+  if (fs.existsSync(frontendPath)) {
+    app.use(express.static(frontendPath));
+    
+    // Serve index.html for all non-API routes
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+  } else {
+    console.log('⚠️  Frontend not built. Serving API only.');
+    app.get('/', (req, res) => {
+      res.json({ 
+        message: 'Web Automation Platform API',
+        version: '1.0.0',
+        endpoints: {
+          health: 'GET /api/health',
+          automate: 'POST /api/automate'
+        },
+        note: 'Frontend needs to be built: cd frontend && npm run build'
+      });
+    });
+  }
 }
 
 const PORT = process.env.PORT || 3005;

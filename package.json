@@ -9,7 +9,10 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "install:all": "npm install && cd frontend && npm install",
     "build:frontend": "cd frontend && npm install && npm run build",
-    "start": "node backend/server.js"
+    "build": "npm install && cd frontend && npm install && npm run build",
+    "start": "node backend/server.js",
+    "leapcell:build": "npm install && cd frontend && npm install && npm run build",
+    "leapcell:start": "node backend/server.js"
   },
   "keywords": [
     "playwright",

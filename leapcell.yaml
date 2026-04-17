@@ -8,11 +8,16 @@ service:
   runtime: nodejs
   node_version: "18"
   
-  # Build configuration
+  # Build configuration - CRITICAL: Must build frontend
   build:
     commands:
       - npm install
-      - cd frontend && npm install && npm run build
+      - cd frontend
+      - npm install
+      - npm run build
+      - cd ..
+      - echo "Build complete. Verifying frontend/dist exists..."
+      - ls -la frontend/dist/
   
   # Start command
   start:
