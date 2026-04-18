@@ -507,23 +507,32 @@ function normalizeErrorMessage(error) {
 
 async function runSingleVisit({ url, profile, browser, captureScreenshot }) {
   const visitStartTime = Date.now();
+  let context;
+  
+  try {
+    console.log('   Creating browser context...');
+    context = await browser.newContext({
+      userAgent: profile.userAgent,
+      viewport: profile.viewport,
+      locale: profile.locale,
+      timezoneId: profile.timezoneId,
+      colorScheme: Math.random() > 0.5 ? 'dark' : 'light',
+      deviceScaleFactor: profile.deviceType === 'mobile' ? 3 : 1,
+      isMobile: profile.deviceType === 'mobile',
+      hasTouch: profile.deviceType === 'mobile',
+      extraHTTPHeaders: {
+        'Accept-Language': `${profile.locale},en;q=0.9`,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      permissions: ['geolocation', 'notifications']
+    });
+    console.log('   Context created successfully');
 
-  const context = await browser.newContext({
-    userAgent: profile.userAgent,
-    viewport: profile.viewport,
-    locale: profile.locale,
-    timezoneId: profile.timezoneId,
-    colorScheme: Math.random() > 0.5 ? 'dark' : 'light',
-    deviceScaleFactor: profile.deviceType === 'mobile' ? 3 : 1,
-    isMobile: profile.deviceType === 'mobile',
-    hasTouch: profile.deviceType === 'mobile',
-    extraHTTPHeaders: {
-      'Accept-Language': `${profile.locale},en;q=0.9`,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Upgrade-Insecure-Requests': '1'
-    },
-    permissions: ['geolocation', 'notifications']
-  });
+  } catch (contextError) {
+    console.error('   ❌ Failed to create context:', contextError.message);
+    throw contextError;
+  }
 
   try {
     await context.addInitScript((fp) => {
@@ -765,7 +774,9 @@ async function runSingleVisit({ url, profile, browser, captureScreenshot }) {
       behaviorSimulated: true
     };
   } finally {
-    await context.close().catch(() => {});
+    if (context) {
+      await context.close().catch(() => {});
+    }
   }
 }
 
@@ -879,9 +890,16 @@ async function automateStealthTraffic(url, options = {}, onProgress = null) {
         '--no-default-browser-check',
         '--js-flags=--max-old-space-size=2048',
         '--disable-gpu',
-        '--disable-software-rasterizer'
+        '--disable-software-rasterizer',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding'
       ]
     });
+
+    // Verify browser is actually running
+    console.log('✅ Browser launched successfully');
+    console.log('   Browser version:', await browser.version());
 
     const usedUserAgents = new Set();
     const usedFingerprintKeys = new Set();
